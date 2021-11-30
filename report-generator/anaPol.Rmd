@@ -1,0 +1,151 @@
+---
+title: "Proyecto DataPol"
+author: "Entregable 1 - Grupo NEO, Universidad de Málaga"
+date: "Junio 2021"
+output:
+#  html_document:
+  word_document:
+    number_sections: TRUE
+  always_allow_html: true
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r , message=FALSE, echo=FALSE}
+packages <- c("data.table","dplyr","tidyverse",
+              "lubridate","kdensity","gplots",
+              "leaflet","ggplot2","heatmaply",
+              "tidyr","gt","huxtable","janitor",
+              "leaflet","forecast")
+#installed_packages <- packages %in% rownames( installed.packages() )
+#if (any(installed_packages == FALSE)) {
+#  install.packages(packages[!installed_packages], repos = "http://cran.us.r-project.org")
+#}
+invisible(lapply(packages, library, character.only = TRUE))
+```
+
+<br/>
+
+## Motivación {-}
+El presente informe abreviado es un ejemplo sencillo de cómo generar la Memoria Anual de la Policía de Fuengirola, a partir de su base de datos, de forma semi-automática: poca o nula intervención humana y un enorme ahorro de tiempo y recursos.
+
+Podemos acceder a los datos de la mitad de las secciones de la citada memoria, que son suficientes para demostrar su posible automatización. Incluimos una última sección, no disponible en la Memoria, con un ejemplo de predicciones posibles.
+
+
+# Registros
+
+En este apartado se contabiliza la entrada y salida de distintos tipos de documentación, su procedencia o su destino. En el gráfico siguiente presentamos, a modo de ejemplo, las entradas del año 2019 por las diferentes vías posibles.
+
+```{r , fig.,message=FALSE, echo=FALSE}
+xxx<-read.csv('ENTRADA(registro).csv',header = T,sep=',')
+dat_xxx <- count(xxx,cbMedioEntrada)[-c(2,3),]
+ggplot(data=dat_xxx, aes(x=cbMedioEntrada, y = n),fill='red') + geom_bar(stat="identity",fill="steelblue") + theme_minimal() + xlab('') + ylab('número') +  theme(axis.text.x = element_text(angle = 90, vjust=0.1)) + geom_text(aes(label=n), vjust=-0.3, color="black", size=3.5)
+```
+<br/>
+
+# Objetos perdidos
+
+A continuación se presentan las entradas y salidas de objetos perdidos mes a mes durante el año 2019.
+
+```{r , message=FALSE, echo=FALSE}
+xxx=read.csv('entradasysalidas(ObjPerdidos).csv',header=T,sep=',')
+dat_xxx <- xxx %>% gather("Tipo","Valor",-fecha)
+ggplot(data=dat_xxx, aes(x=factor(fecha,levels = unique(fecha)), y = Valor, fill = Tipo)) + geom_bar(stat="identity")+theme_minimal() + xlab('fecha') + coord_flip() 
+#+ geom_text(aes(label=Valor), vjust=1.6, color="white", size=3.5)
+```
+<br/>
+
+# Actuaciones administrativas
+
+La siguiente tabla muestra el número de sanciones administrativas debidas a actividades molestas a lo largo del año 2019 por meses y tipo de actividad.
+
+
+```{r , message=FALSE, echo=FALSE}
+xxx=read.csv('activMolestas(Administrativas).csv',header=T,sep=',')
+dat_xxx <- xxx %>% adorn_totals("row") %>% adorn_totals("col")
+#gt(dat_xxx) #html output
+ht <- as_hux(dat_xxx)
+font_size(ht) <- 8
+ht
+```
+<br/>
+
+# Seguridad Ciudadana
+
+En el ámbito de la seguridad ciudadana existen numerosas intervenciones. Entre ellas, a modo de ejemplo, describimos gráficamente la aprehensión de diferentes estupefacientes.
+
+
+```{r , fig.align='center', message=FALSE, echo=FALSE}
+# xxx=read.csv('droga2019.csv',header=T,sep=',')
+# dat_xxx <- xxx %>% gather("Sustancia","Cantidad",-fecha)
+# ggplot(data=dat_xxx, aes(x=factor(fecha,levels = unique(fecha)), y = Cantidad, fill = Sustancia)) + geom_bar(stat="identity")+theme_minimal() + xlab('fecha')
+xxx=read.csv('atestados(SCiudadana).csv',header=T,sep=',')
+dat_xxx <- xxx %>% adorn_totals("row")
+#gt(dat_xxx) #html output
+ht<-as_hux(dat_xxx)
+font_size(ht) <-8
+ht
+```
+<br/>
+
+# Sala 091/112
+
+Los datos de atención de llamadas y de incidencias atendidas a lo largo del año 2019 se presentan en el gráfico siguiente a modo de ejemplo:
+
+<br/>
+
+```{r , fig.align='center', message=FALSE, echo=FALSE}
+xxx=read.csv('incidenciasSala2019_2.csv',header=T,sep=',')
+dat_xxx <- xxx %>% gather("Tipo","Valor",-fecha)
+ggplot(data=dat_xxx, aes(x=factor(fecha,levels = unique(fecha)), y = Valor, fill = Tipo)) + geom_bar(stat="identity")+theme_minimal() + xlab('fecha') 
+#+ geom_text(aes(label=Valor), vjust=1.6, color="white", size=3.5)
+```
+
+<!-- # Mapa de incidencias de Fuengirola -->
+<!-- ```{r, echo=FALSE} -->
+<!-- expedientes<-read.table("./all-data.tsv", sep="\t",header=TRUE) -->
+<!-- expedientes <- expedientes %>% filter(expedientes$X > 0) -->
+<!-- expedientes$Fecha <-  ymd_hms(expedientes$Fecha) -->
+<!-- expedientes <- expedientes[1:500,] -->
+<!-- trafico<-expedientes[expedientes$T1 == "1 TRÁFICO",] -->
+<!-- trafico <-  trafico %>% filter(Fecha >= "2016-11-01") %>% filter(Fecha <= "2017-03-01") -->
+<!-- mappol <- leaflet() %>% addTiles() %>% setView(lng = -4.62473, lat = 36.53998, zoom = 12) -->
+<!-- mappol <- mappol %>% addMarkers(head(trafico),lng=trafico$X, lat=trafico$Y) -->
+<!-- mappol -->
+<!-- ``` -->
+<!-- 6371 * acos(cos(radians(LATITUD_ACTUAL)) * cos(radians(lat)) * cos(radians(lon) - radians(LONGITUD_ACTUAL)) + sin(radians(LATITUD_ACTUAL)) * sin(radians(lat)))) -->
+
+<br/>
+
+\newline
+# Predicción temporal de incidencias
+
+A partir de un tipo de incidencias y su evolución en el tiempo, podemos predecir estadísticamente el número de incidencias para los días/semanas futuras. Esto puede utilizarse para planificar plantillas y reforzar lugares estratégicos.
+
+```{r , fig.align='center', message=FALSE, echo=FALSE}
+expedientes<-read.table("./all-data.tsv", sep="\t",header=TRUE)
+expedientes$Fecha <- ymd_hms(expedientes$Fecha)
+trafico <- select(expedientes,Fecha)
+traficoday <- trafico %>% group_by(day=floor_date(Fecha,"day")) %>% summarise(n=n())
+traficoweek <- trafico %>% group_by(day=floor_date(Fecha,"week")) %>% summarise(n=n())
+traficomonth <- trafico %>% group_by(day=floor_date(Fecha,"month")) %>% summarise(n=n())
+traficomonth <- traficomonth %>% filter(n>10)
+trafico_ts <- ts(traficomonth$n, start=c(2016,10), end=c(2018,11),frequency=12)
+fit<-tslm(trafico_ts~trend+season)
+#plot(forecast(fit,h=6),fcol='blue',flty=4,flwd=3,main='Predicción de incidencias',xlab='fecha',ylab='número de incidencias',lwd=3,col='blue')
+plot(forecast(fit,h=6),fcol='blue',flty=4,flwd=3,main="", xlab='fecha',ylab='número de incidencias',lwd=3,col='blue')
+```
+
+
+
+```{r, echo=FALSE}
+# relación de incidencias
+# all.interactions <- table.related.events(expedientes,0.300, dminutes(30))
+# pairs<- buil.pairs(all.interactions)
+# m<-build.matrix(expedientes, pairs)
+# pmi <- positive.mi.matrix(m)
+# #heatmap.2(pmi, col=bluered(100), labRow = levels(expedientes$T1), labCol=levels(expedientes$T1))
+# heatmaply(pmi, col=bluered(100), labRow = levels(expedientes$T1), labCol=levels(expedientes$T1))
+```
