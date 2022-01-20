@@ -147,6 +147,25 @@ class Solution:
                         self.evaluatePatrol(previousPatrol)
                     self.evaluatePatrol(p)  # We can do this more efficient, storing previous numbers
 
+            if len(self.patrols[p]) > 1:
+                subgraph_patrol = self.graph.subgraph(self.patrols[p])
+                for n in self.patrols[p]:
+                    if not (n in nx.articulation_points(subgraph_patrol)):
+                        oldContributionOfP = self.contributionOfPatrol(p)
+                        self.patrols[p].remove(n)
+                        self.patrolOfNode[n] = None
+                        self.evaluatePatrol(p)
+                        newContributionOfP = self.contributionOfPatrol(p)
+                        delta = (newContributionOfPatrolP - oldContributionOfP)
+                        if delta > 0:
+                            # Move to new solution, leave the change as it is
+                            self.adjacentNodesForPatrol[p].add(n)
+                            return delta
+                        else:
+                            self.patrolOfNode[n] = p
+                            self.patrols[p].add(n)
+                            self.evaluatePatrol(p)  # We can do this more efficient, storing previous numbers
+                        
         return 0
 
     def localSearch(self):
